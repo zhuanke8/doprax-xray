@@ -4,7 +4,9 @@ nx=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 4)
 xpid=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 8)
 [ -n "${ver}" ] && wget -O $nx.zip https://github.com/XTLS/Xray-core/releases/download/v${ver}/Xray-linux-64.zip
 [ ! -s $nx.zip ] && wget -O $nx.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
-unzip $nx.zip && rm -f $nx.zip
+unzip $nx.zip xray && rm -f $nx.zip
+wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
+wget https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
 chmod a+x xray && mv xray $xpid
 sed -i "s/uuid/$uuid/g" ./config.json
 sed -i "s/uuid/$uuid/g" /etc/nginx/nginx.conf
@@ -20,13 +22,13 @@ sleep 5
 ARGO=$(cat argo.log | grep -oE "https://.*[a-z]+cloudflare.com" | sed "s#https://##")
 xver=`./$xpid version | sed -n 1p | awk '{print $2}'`
 UA_Browser="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36"
-v4=$(curl -s4m6 api64.ipify.org -k)
+v4=$(curl -s4m6 ip.sb -k)
 v4l=`curl -sm6 --user-agent "${UA_Browser}" http://ip-api.com/json/$v4?lang=zh-CN -k | cut -f2 -d"," | cut -f4 -d '"'`
 
-doprax_xray_vmess="vmess://$(echo -n "\
+Argo_xray_vmess="vmess://$(echo -n "\
 {\
 \"v\": \"2\",\
-\"ps\": \"doprax_xray_vmess\",\
+\"ps\": \"Argo_xray_vmess\",\
 \"add\": \"${ARGO}\",\
 \"port\": \"443\",\
 \"id\": \"$uuid\",\
@@ -39,14 +41,15 @@ doprax_xray_vmess="vmess://$(echo -n "\
 \"sni\": \"${ARGO}\"\
 }"\
     | base64 -w 0)" 
-doprax_xray_vless="vless://${uuid}@${ARGO}:443?encryption=none&security=tls&sni=$ARGO&type=ws&host=${ARGO}&path=/$uuid-vl#doprax_xray_vless"
-doprax_xray_trojan="trojan://${uuid}@${ARGO}:443?security=tls&type=ws&host=${ARGO}&path=/$uuid-tr&sni=$ARGO#doprax_xray_trojan"
+Argo_xray_vless="vless://${uuid}@${ARGO}:443?encryption=none&security=tls&sni=$ARGO&type=ws&host=${ARGO}&path=/$uuid-vl#Argo_xray_vless"
+Argo_xray_trojan="trojan://${uuid}@${ARGO}:443?security=tls&type=ws&host=${ARGO}&path=/$uuid-tr&sni=$ARGO#Argo_xray_trojan"
 
 cat > log << EOF
 当前已安装的Xray正式版本：$xver
-当前检测到的IP：$v4    地区：$v4l
+当前检测到的IP：$v4
+地区：$v4l
 ==================================================
-cloudflared argo 隧道模式配置如下
+Cloudflared Argo 隧道模式配置如下
 ==================================================
 vmess+ws+tls配置明文如下，相关参数可复制到客户端
 服务器地址（可更改为自选IP）：$ARGO
@@ -58,7 +61,7 @@ host/sni：$ARGO
 path路径：/$uuid-vm
 
 分享链接如下（默认443端口、tls开启，服务器地址可更改为自选IP）
-${doprax_xray_vmess}
+${Argo_xray_vmess}
 
 -----------------------------------------------------------------------
 vless+ws+tls配置明文如下，相关参数可复制到客户端
@@ -71,7 +74,7 @@ host/sni：$ARGO
 path路径：/$uuid-vl
 
 分享链接如下（默认443端口、tls开启，服务器地址可更改为自选IP）
-${doprax_xray_vless}
+${Argo_xray_vless}
 
 ------------------------------------------------------
 trojan+ws+tls配置明文如下，相关参数可复制到客户端
@@ -84,7 +87,7 @@ host/sni：$ARGO
 path路径：/$uuid-tr
 
 分享链接如下（默认443端口、tls开启，服务器地址可更改为自选IP）
-${doprax_xray_trojan}
+${Argo_xray_trojan}
 
 ------------------------------------------------------
 shadowsocks+ws+tls配置明文如下，相关参数可复制到客户端
